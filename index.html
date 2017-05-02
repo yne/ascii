@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- saved from url=(0020)http://yne.fr/ascii/ -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script>$=function(query,e){return (e||document).querySelector(query)};
 function asciicode8(r1,g1,b1,a1, r2,g2,b2,a2) {//8^3 colorspace
@@ -9,8 +8,8 @@ function asciicode8(r1,g1,b1,a1, r2,g2,b2,a2) {//8^3 colorspace
 	if( a1&& a2)return ['\u2580',38,2,r1,g1,b1,48,2,r2,g2,b2];
 }
 function asciicode6(r1,g1,b1,a1, r2,g2,b2,a2) {//6^3 colorspace
-	var c1=16+((r1/42|0)*36)+((g1/42|0)*6)+(b1/42|0);
-	var c2=16+((r2/42|0)*36)+((g2/42|0)*6)+(b2/42|0);
+	var c1=16+((r1/43|0)*36)+((g1/43|0)*6)+(b1/43|0);
+	var c2=16+((r2/43|0)*36)+((g2/43|0)*6)+(b2/43|0);
 	if(!a1&&!a2)return ['\u0020',               ];
 	if(!a1&& a2)return ['\u2584',49,     38,5,c2];
 	if( a1&&!a2)return ['\u2580',38,5,c1,49,    ];
@@ -18,7 +17,6 @@ function asciicode6(r1,g1,b1,a1, r2,g2,b2,a2) {//6^3 colorspace
 }
 function toascii(img,use8b){
 	var asciicode=use8b?asciicode8:asciicode6;
-	console.log(use8b)
 	var ascii="",w=img.width*4,d=img.data;
 	for(var y=0;y<img.height;y+=2){//skip half lines
 		for(var x=0,i=y*img.width*4;x<img.width;x++,i+=4){
