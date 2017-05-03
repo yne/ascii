@@ -15,15 +15,21 @@ function asciicode6(r1,g1,b1,a1, r2,g2,b2,a2) {//6^3 colorspace
 	if( a1&&!a2)return ['\u2580',38,5,c1,49,    ];
 	if( a1&& a2)return ['\u2580',38,5,c1,48,5,c2];
 }
+var last=['\u0020'];
+function compress(c){
+	if(JSON.stringify(c)==JSON.stringify(last))
+		return c[0];
+	last=c;
+	return '\u001b['+c.slice(1).join(';')+'m'+c[0];
+}
 function toascii(img,use8b){
 	var asciicode=use8b?asciicode8:asciicode6;
 	var ascii="",w=img.width*4,d=img.data;
 	for(var y=0;y<img.height;y+=2){//skip half lines
 		for(var x=0,i=y*img.width*4;x<img.width;x++,i+=4){
-			var c=asciicode(d[i],d[i+1],d[i+2],d[i+3],d[w+i],d[w+i+1],d[w+i+2],d[w+i+3]);
-			ascii+='\u001b['+c.slice(1).join(';')+'m'+c[0];
+			ascii+=compress(asciicode(d[i],d[i+1],d[i+2],d[i+3],d[w+i],d[w+i+1],d[w+i+2],d[w+i+3]));
 		}
-		ascii+="\u001b[m\n"
+		ascii+=(last.length>1?"\u001b[m":"")+"\n"
 	}
 	return ascii;
 }
