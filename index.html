@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="en">
+<style>
+output{font-family:monospace;display:inline-block}
+q{font-size:0px;}
+</style>
 <script>$=function(query,e){return (e||document).querySelector(query)};
 function asciicode8(r1,g1,b1,a1, r2,g2,b2,a2) {//8^3 colorspace
 	if(!a1&&!a2)return ['\u0020',                           ];
@@ -14,6 +18,12 @@ function asciicode6(r1,g1,b1,a1, r2,g2,b2,a2) {//6^3 colorspace
 	if(!a1&& a2)return ['\u2584',49,     38,5,c2];
 	if( a1&&!a2)return ['\u2580',38,5,c1,49,    ];
 	if( a1&& a2)return ['\u2580',38,5,c1,48,5,c2];
+}
+function inflate(c){
+	const b = (c%6)*51;
+	const g = ((c/6)%6)*51;
+	const r = ((c/36)%6)*51;
+	return `rgb(${r},${g},${b})`
 }
 var last=['\u0020'];
 function compress(c){
@@ -33,13 +43,49 @@ function toascii(img,use8b){
 	}
 	return ascii;
 }
+function toHTML(ascii) {
+	let bg="",fg="",_;
+	function code2css(text) {
+		const codes = text.slice(2,-1).split(';').map(e=>+e);
+		while(codes.length) {
+			switch(_=codes.shift()){
+				case 0: bg='black';fg="transparent";
+				case 39: bg='black';break;
+				case 38: switch(codes.shift()){
+					case 2:bg=`rgb(${codes.shift()},${codes.shift()},${codes.shift()})`;break;
+					case 5:bg=inflate(codes.shift()-16);break;
+					default: console.log("unk colorspace")
+				}break;
+				case 49: fg='transparent';break;
+				case 48: switch(codes.shift()){
+					case 2:fg=`rgb(${codes.shift()},${codes.shift()},${codes.shift()})`;break;
+					case 5:fg=inflate(codes.shift()-16);break;
+					default: console.log("unk colorspace")
+				}break;
+				default: console.log("unk CSI command",_,text)
+			}
+		}
+		return `<a style="background:${fg};color:${bg}">`;
+	}
+	return ascii
+		.replace(/\n/g,'<br/>').replace(/ /g,"&nbsp;")
+		.replace(/\u001b\[.*?m/g, e => `<q>${e}</q>`+code2css(e))
+}
 </script>
 </head>
 <body>
 <form style="position:absolute;top:0;right:0;z-index:999" onsubmit="var fr=new FileReader();fr.onload=function(){$('img').src=fr.result;};fr.readAsDataURL($('[type=file]').files[0]);return false;">
-	<img   onload="var canvas=document.createElement('canvas');canvas.getContext('2d').drawImage(this,0,0,canvas.width=this.width,canvas.height=this.height);$('textarea').innerHTML=toascii(canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height),$('[type=checkbox]').checked)" hidden/>
+	<img   onload="var canvas=document.createElement('canvas');canvas.getContext('2d').drawImage(this,0,0,canvas.width=this.width,canvas.height=this.height);$('output').innerHTML=toHTML($('textarea').innerHTML=toascii(canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height),$('[type=checkbox]').checked))" hidden/>
 	<input onchange="this.form.onsubmit()" type="file"/>
 	<input onchange="this.form.onsubmit()" type="checkbox"/>8bit
+	<input type=color onchange="$('output').style.background=this.value">
 </form>
-<textarea style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;padding:0;margin:0;font-size:8px;">drop your image on the top right button, ascii will appear here</textarea>
-</body></html>
+<output style=background:#888></output>
+<form method="POST" action="http://ix.io/" enctype="multipart/form-data">
+	<textarea name="f:1"></textarea>
+	<button>Publish on ix.io</button>
+</form>
+</body>
+<script>
+</script>
+</html>
