@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <style>
-output{font-family:monospace;display:inline-block}
-q{font-size:0px;}
+:root{--size:1}
+output{font-family:monospace;font-size:14px;padding: 1em;display:grid;grid-template-columns: repeat(var(--size), 10px);}
+b{font-size:0px;}
 </style>
 <script>$=function(query,e){return (e||document).querySelector(query)};
+$css=document.documentElement.style;
 function asciicode8(r1,g1,b1,a1, r2,g2,b2,a2) {//8^3 colorspace
 	if(!a1&&!a2)return ['\u0020',                           ];
 	if(!a1&& a2)return ['\u2584',49,           38,2,r2,g2,b2];
@@ -43,47 +45,53 @@ function toascii(img,use8b){
 	}
 	return ascii;
 }
-function toHTML(ascii) {
-	let bg="",fg="",_;
-	function code2css(text) {
-		const codes = text.slice(2,-1).split(';').map(e=>+e);
-		while(codes.length) {
-			switch(_=codes.shift()){
-				case 0: bg='black';fg="transparent";
-				case 39: bg='black';break;
-				case 38: switch(codes.shift()){
-					case 2:bg=`rgb(${codes.shift()},${codes.shift()},${codes.shift()})`;break;
-					case 5:bg=inflate(codes.shift()-16);break;
-					default: console.log("unk colorspace")
-				}break;
-				case 49: fg='transparent';break;
-				case 48: switch(codes.shift()){
-					case 2:fg=`rgb(${codes.shift()},${codes.shift()},${codes.shift()})`;break;
-					case 5:fg=inflate(codes.shift()-16);break;
-					default: console.log("unk colorspace")
-				}break;
-				default: console.log("unk CSI command",_,text)
-			}
+
+function code2css(text) {
+	const codes = text.slice(2,-1).split(';').map(e=>+e);
+	let result = {}
+	while(codes.length) {
+		switch(codes.shift()){
+			case 0: result.bg='black';result.fg="transparent";break;
+			case 39: result.bg='black';break;
+			case 38: switch(codes.shift()){
+				case 2:result.bg = `rgb(${codes.shift()},${codes.shift()},${codes.shift()})`;break;
+				case 5:result.bg = inflate(codes.shift()-16);break;
+				default: console.log("unk colorspace")
+			}break;
+			case 49: result.fg = 'transparent';break;
+			case 48: switch(codes.shift()){
+				case 2:result.fg = `rgb(${codes.shift()},${codes.shift()},${codes.shift()})`;break;
+				case 5:result.fg = inflate(codes.shift()-16);break;
+				default: console.log("unk colorspace")
+			}break;
+			default: console.log("unk CSI command",text)
 		}
-		return `<a style="background:${fg};color:${bg}">`;
 	}
-	return ascii
-		.replace(/\n/g,'<br/>').replace(/ /g,"&nbsp;")
-		.replace(/\u001b\[.*?m/g, e => `<q>${e}</q>`+code2css(e))
+	return result;
+}
+function toHTML(ascii) {
+	let state = {bg:"transparent",fg:"transparent"};
+	return ascii.replace(/(\u001b\[.*?m)?[^\u001b]/g, tuple => {
+		let text = tuple.substr(-1), csi=tuple.substr(0,tuple.length-1);
+		if(text==' ')text='&nbsp;'
+		if(text=='\n')return ''
+		if(tuple[0]=='\u001b')Object.assign(state,code2css(csi))
+		else{csi=''}
+		return `<a style="background:${state.fg};color:${state.bg}"><b>${csi}</b>${text}</a>`
+	})
 }
 </script>
 </head>
 <body>
 <form style="position:absolute;top:0;right:0;z-index:999" onsubmit="var fr=new FileReader();fr.onload=function(){$('img').src=fr.result;};fr.readAsDataURL($('[type=file]').files[0]);return false;">
-	<img   onload="var canvas=document.createElement('canvas');canvas.getContext('2d').drawImage(this,0,0,canvas.width=this.width,canvas.height=this.height);$('output').innerHTML=toHTML($('textarea').innerHTML=toascii(canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height),$('[type=checkbox]').checked))" hidden/>
+	<img   onload="$css.setProperty('--size', this.width);var canvas=document.createElement('canvas');canvas.getContext('2d').drawImage(this,0,0,canvas.width=this.width,canvas.height=this.height);$('output').innerHTML=toHTML($('textarea').innerHTML=toascii(canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height),$('[type=checkbox]').checked))" hidden/>
 	<input onchange="this.form.onsubmit()" type="file"/>
 	<input onchange="this.form.onsubmit()" type="checkbox"/>8bit
-	<input type=color onchange="$('output').style.background=this.value">
+	<input type=color value=#FFFFFF onchange="$('output').style.background=this.value">
 </form>
-<output style=background:#888></output>
-<form method="POST" action="http://ix.io/" enctype="multipart/form-data">
+<div style="display:flex;justify-content:center;"><output></output></div>
+<form method="POST" action="http://ix.io/" enctype="text/plain">
 	<textarea name="f:1"></textarea>
-	<button>Publish on ix.io</button>
 </form>
 </body>
 <script>
